@@ -1,0 +1,12 @@
+{
+    "prod": {
+        "API_ACCESS_ID": "2PB2________________",
+        "API_ACCESS_KEY": "r2S5W=",
+        "COMPANY_NAME": "portal1"
+    },
+    "sandbox": {
+        "API_ACCESS_ID": "6mZWt7______________",
+        "API_ACCESS_KEY": "3U2Nz",
+        "COMPANY_NAME": "portal2"
+    }
+}
