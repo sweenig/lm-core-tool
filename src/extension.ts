@@ -35,31 +35,48 @@ interface DataSource {
 interface PropertySource {
     id: number;
     name: string;
+    groovyScript: string;
+    windowsScript: string;
 }
 
 interface EventSource {
     id: number;
     name: string;
+    groovyScript: string;
 }
 
 interface ConfigSource {
     id: number;
     name: string;
+    collectorAttribute: {
+        groovyScript: string;
+        scriptType: string;
+    };
+    autoDiscoveryConfig: {
+        method: {
+            groovyScript: string;
+            type: string;
+        }
+    }
 }
 
 interface TopologySource {
     id: number;
     name: string;
+    collectorAttribute: {
+        groovyScript: string;
+        scriptType: string;
+    };
 }
 
 interface LogSource {
     id: number;
     name: string;
-}
-
-interface SysOidMap {
-    id: number;
-    oid: string;
+    collectionAttribute: {
+        script: {
+            embeddedContent: string;
+        }
+    }
 }
 
 interface AppliesToFunction {
@@ -298,7 +315,7 @@ async function getRemotePropertySources(context: vscode.ExtensionContext, output
 
     try {
         while (hasMore) {
-            const response = await makeApiRequest(context, outputChannel, portalDetails, 'GET', '/setting/propertyrules', null, { size: String(size), offset: String(offset), fields: 'id,name' });
+            const response = await makeApiRequest(context, outputChannel, portalDetails, 'GET', '/setting/propertyrules', null, { size: String(size), offset: String(offset), fields: 'id,name,groovyScript,windowsScript' });
             if (response && response.items) {
                 allPropertySources = allPropertySources.concat(response.items);
                 if (response.items.length < size) {
@@ -325,7 +342,7 @@ async function getRemoteEventSources(context: vscode.ExtensionContext, outputCha
 
     try {
         while (hasMore) {
-            const response = await makeApiRequest(context, outputChannel, portalDetails, 'GET', '/setting/eventsources', null, { size: String(size), offset: String(offset), fields: 'id,name' });
+            const response = await makeApiRequest(context, outputChannel, portalDetails, 'GET', '/setting/eventsources', null, { size: String(size), offset: String(offset), fields: 'id,name,groovyScript' });
             if (response && response.items) {
                 allEventSources = allEventSources.concat(response.items);
                 if (response.items.length < size) {
@@ -352,7 +369,7 @@ async function getRemoteConfigSources(context: vscode.ExtensionContext, outputCh
 
     try {
         while (hasMore) {
-            const response = await makeApiRequest(context, outputChannel, portalDetails, 'GET', '/setting/configsources', null, { size: String(size), offset: String(offset), fields: 'id,name' });
+            const response = await makeApiRequest(context, outputChannel, portalDetails, 'GET', '/setting/configsources', null, { size: String(size), offset: String(offset), fields: 'id,name,collectorAttribute,autoDiscoveryConfig' });
             if (response && response.items) {
                 allConfigSources = allConfigSources.concat(response.items);
                 if (response.items.length < size) {
@@ -379,7 +396,7 @@ async function getRemoteTopologySources(context: vscode.ExtensionContext, output
 
     try {
         while (hasMore) {
-            const response = await makeApiRequest(context, outputChannel, portalDetails, 'GET', '/setting/topologysources', null, { size: String(size), offset: String(offset), fields: 'id,name' });
+            const response = await makeApiRequest(context, outputChannel, portalDetails, 'GET', '/setting/topologysources', null, { size: String(size), offset: String(offset), fields: 'id,name,collectorAttribute' });
             if (response && response.items) {
                 allTopologySources = allTopologySources.concat(response.items);
                 if (response.items.length < size) {
@@ -406,7 +423,7 @@ async function getRemoteLogSources(context: vscode.ExtensionContext, outputChann
 
     try {
         while (hasMore) {
-            const response = await makeApiRequest(context, outputChannel, portalDetails, 'GET', '/setting/logsources', null, { size: String(size), offset: String(offset), fields: 'id,name' });
+            const response = await makeApiRequest(context, outputChannel, portalDetails, 'GET', '/setting/logsources', null, { size: String(size), offset: String(offset), fields: 'id,name,collectionAttribute' });
             if (response && response.items) {
                 allLogSources = allLogSources.concat(response.items);
                 if (response.items.length < size) {
@@ -421,33 +438,6 @@ async function getRemoteLogSources(context: vscode.ExtensionContext, outputChann
         return allLogSources.sort((a, b) => a.name.localeCompare(b.name));
     } catch (error) {
         console.error("Error fetching remote LogSources:", error);
-        return [];
-    }
-}
-
-async function getRemoteSysOidMaps(context: vscode.ExtensionContext, outputChannel: vscode.OutputChannel, portalDetails: Portal): Promise<SysOidMap[]> {
-    let allSysOidMaps: SysOidMap[] = [];
-    let offset = 0;
-    const size = 1000;
-    let hasMore = true;
-
-    try {
-        while (hasMore) {
-            const response = await makeApiRequest(context, outputChannel, portalDetails, 'GET', '/setting/oids', null, { size: String(size), offset: String(offset), fields: 'id,oid' });
-            if (response && response.items) {
-                allSysOidMaps = allSysOidMaps.concat(response.items);
-                if (response.items.length < size) {
-                    hasMore = false;
-                } else {
-                    offset += size;
-                }
-            } else {
-                hasMore = false;
-            }
-        }
-        return allSysOidMaps.sort((a, b) => a.oid.localeCompare(b.oid));
-    } catch (error) {
-        console.error("Error fetching remote SysOidMaps:", error);
         return [];
     }
 }
@@ -484,7 +474,7 @@ class SettingsProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
     private _onDidChangeTreeData: vscode.EventEmitter<vscode.TreeItem | undefined | null | void> = new vscode.EventEmitter<vscode.TreeItem | undefined | null | void>();
     readonly onDidChangeTreeData: vscode.Event<vscode.TreeItem | undefined | null | void> = this._onDidChangeTreeData.event;
 
-    constructor(private context: vscode.ExtensionContext) { }
+    constructor(private context: vscode.ExtensionContext) { } 
 
     refresh(): void {
         this._onDidChangeTreeData.fire();
@@ -527,7 +517,7 @@ class CurrentSelectionsProvider implements vscode.TreeDataProvider<vscode.TreeIt
     private _onDidChangeTreeData: vscode.EventEmitter<vscode.TreeItem | undefined | null | void> = new vscode.EventEmitter<vscode.TreeItem | undefined | null | void>();
     readonly onDidChangeTreeData: vscode.Event<vscode.TreeItem | undefined | null | void> = this._onDidChangeTreeData.event;
 
-    constructor(private context: vscode.ExtensionContext, private outputChannel: vscode.OutputChannel) { }
+    constructor(private context: vscode.ExtensionContext, private outputChannel: vscode.OutputChannel) { } 
 
     refresh(): void {
         this._onDidChangeTreeData.fire();
@@ -634,8 +624,7 @@ class NavigationProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
 
                     return treeItems;
                 }
-            }
-            else if (element.id?.startsWith('group-')) {
+            } else if (element.id?.startsWith('group-')) {
                 const storedData = this.context.workspaceState.get<{ groups: CollectorGroup[], groupedCollectors: { [key: number]: Collector[] }, ungroupedCollectors: Collector[] }>('logicmonitor.groupedCollectors');
                 if (storedData) {
                     const groupId = element.id.replace('group-', '');
@@ -723,13 +712,14 @@ async function pollDebugSession(
         const resourcePath = `/debug/${sessionId}`;
         const queryParams = {
             collectorId: String(collectorId),
-            _: Date.now().toString() // Dummy parameter to prevent caching
+            '_': Date.now().toString() // Dummy parameter to prevent caching
         };
 
         try {
             const response = await makeApiRequest(context, outputChannel, portalDetails, 'GET', resourcePath, null, queryParams);
             if (debugEnabled) {
-                outputChannel.appendLine(`\n--- Debug Session Poll (${i + 1}/${maxAttempts}) ---`);
+                outputChannel.appendLine(`
+--- Debug Session Poll (${i + 1}/${maxAttempts}) ---`);
                 outputChannel.appendLine(JSON.stringify(response, null, 2));
                 outputChannel.appendLine(`--- End Debug Session Poll ---`);
             }
@@ -783,7 +773,7 @@ class ModulesProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
     private _onDidChangeTreeData: vscode.EventEmitter<vscode.TreeItem | undefined | null | void> = new vscode.EventEmitter<vscode.TreeItem | undefined | null | void>();
     readonly onDidChangeTreeData: vscode.Event<vscode.TreeItem | undefined | null | void> = this._onDidChangeTreeData.event;
 
-    constructor(private context: vscode.ExtensionContext, private outputChannel: vscode.OutputChannel) { }
+    constructor(private context: vscode.ExtensionContext, private outputChannel: vscode.OutputChannel) { } 
 
     refresh(): void {
         this._onDidChangeTreeData.fire();
@@ -874,9 +864,7 @@ class ModulesProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
                                     const item = new vscode.TreeItem(manifest.displayName || manifest.name, vscode.TreeItemCollapsibleState.None);
                                     item.id = `local-module-${manifest.moduleType}-${manifest.id || 'unknown'}`;
                                     item.description = `Portal: ${manifest.portal} (Pulled: ${new Date(manifest.pullDate).toLocaleDateString()})`;
-                                    item.tooltip = `ID: ${manifest.id || 'unknown'}
-Portal: ${manifest.portal}
-Pulled: ${new Date(manifest.pullDate).toLocaleString()}`;
+                                    item.tooltip = `ID: ${manifest.id || 'unknown'}\nPortal: ${manifest.portal}\nPulled: ${new Date(manifest.pullDate).toLocaleString()}`;
                                     item.command = { command: 'logicmonitor.openLocalModule', title: 'Open Local Module', arguments: [modulePath] };
                                     modulesInType.push(item);
                                 }
@@ -900,11 +888,9 @@ Pulled: ${new Date(manifest.pullDate).toLocaleString()}`;
                 topologySourcesRoot.id = 'remote-topology-sources';
                 const logSourcesRoot = new vscode.TreeItem('LogSources', vscode.TreeItemCollapsibleState.Collapsed);
                 logSourcesRoot.id = 'remote-log-sources';
-                const sysOidMapsRoot = new vscode.TreeItem('SysOID Maps', vscode.TreeItemCollapsibleState.Collapsed);
-                sysOidMapsRoot.id = 'remote-sys-oid-maps';
                 const appliesToFunctionsRoot = new vscode.TreeItem('AppliesTo Functions', vscode.TreeItemCollapsibleState.Collapsed);
                 appliesToFunctionsRoot.id = 'remote-applies-to-functions';
-                return Promise.resolve([dataSourcesRoot, propertySourcesRoot, eventSourcesRoot, configSourcesRoot, topologySourcesRoot, logSourcesRoot, sysOidMapsRoot, appliesToFunctionsRoot]);
+                return Promise.resolve([dataSourcesRoot, propertySourcesRoot, eventSourcesRoot, configSourcesRoot, topologySourcesRoot, logSourcesRoot, appliesToFunctionsRoot]);
             } else if (element.id === 'remote-data-sources') {
                 const activePortalName = this.context.workspaceState.get<string>('logicmonitor.activePortal');
                 if (!activePortalName) {
@@ -961,7 +947,8 @@ Pulled: ${new Date(manifest.pullDate).toLocaleString()}`;
                     .map(propertySource => {
                         const item = new vscode.TreeItem(propertySource.name, vscode.TreeItemCollapsibleState.None);
                         item.id = `remote-propertysource-${propertySource.id}`;
-                        // item.command = { command: 'logicmonitor.pullPropertySource', title: 'Pull PropertySource', arguments: [propertySource.id, propertySource.name] };
+                        item.contextValue = 'remote-propertysource';
+                        item.command = { command: 'logicmonitor.pullPropertySource', title: 'Pull PropertySource', arguments: [propertySource] };
                         return item;
                     });
             } else if (element.id === 'remote-event-sources') {
@@ -990,7 +977,8 @@ Pulled: ${new Date(manifest.pullDate).toLocaleString()}`;
                     .map(eventSource => {
                         const item = new vscode.TreeItem(eventSource.name, vscode.TreeItemCollapsibleState.None);
                         item.id = `remote-eventsource-${eventSource.id}`;
-                        // item.command = { command: 'logicmonitor.pullEventSource', title: 'Pull EventSource', arguments: [eventSource.id, eventSource.name] };
+                        item.contextValue = 'remote-eventsource';
+                        item.command = { command: 'logicmonitor.pullEventSource', title: 'Pull EventSource', arguments: [eventSource] };
                         return item;
                     });
             } else if (element.id === 'remote-config-sources') {
@@ -1019,7 +1007,8 @@ Pulled: ${new Date(manifest.pullDate).toLocaleString()}`;
                     .map(configSource => {
                         const item = new vscode.TreeItem(configSource.name, vscode.TreeItemCollapsibleState.None);
                         item.id = `remote-configsource-${configSource.id}`;
-                        // item.command = { command: 'logicmonitor.pullConfigSource', title: 'Pull ConfigSource', arguments: [configSource.id, configSource.name] };
+                        item.contextValue = 'remote-configsource';
+                        item.command = { command: 'logicmonitor.pullConfigSource', title: 'Pull ConfigSource', arguments: [configSource] };
                         return item;
                     });
             } else if (element.id === 'remote-topology-sources') {
@@ -1048,7 +1037,8 @@ Pulled: ${new Date(manifest.pullDate).toLocaleString()}`;
                     .map(topologySource => {
                         const item = new vscode.TreeItem(topologySource.name, vscode.TreeItemCollapsibleState.None);
                         item.id = `remote-topologysource-${topologySource.id}`;
-                        // item.command = { command: 'logicmonitor.pullTopologySource', title: 'Pull TopologySource', arguments: [topologySource.id, topologySource.name] };
+                        item.contextValue = 'remote-topologysource';
+                        item.command = { command: 'logicmonitor.pullTopologySource', title: 'Pull TopologySource', arguments: [topologySource] };
                         return item;
                     });
             } else if (element.id === 'remote-log-sources') {
@@ -1077,25 +1067,10 @@ Pulled: ${new Date(manifest.pullDate).toLocaleString()}`;
                     .map(logSource => {
                         const item = new vscode.TreeItem(logSource.name, vscode.TreeItemCollapsibleState.None);
                         item.id = `remote-logsource-${logSource.id}`;
-                        // item.command = { command: 'logicmonitor.pullLogSource', title: 'Pull LogSource', arguments: [logSource.id, logSource.name] };
+                        item.contextValue = 'remote-logsource';
+                        item.command = { command: 'logicmonitor.pullLogSource', title: 'Pull LogSource', arguments: [logSource] };
                         return item;
                     });
-            } else if (element.id === 'remote-sys-oid-maps') {
-                const activePortalName = this.context.workspaceState.get<string>('logicmonitor.activePortal');
-                if (!activePortalName) {
-                    return Promise.resolve([new vscode.TreeItem('Select a portal to view remote sys-oid maps')]);
-                }
-                const portalDetails = (await getCredentials(this.context))?.find(([name, _]) => name === activePortalName)?.[1];
-                if (!portalDetails) {
-                    return Promise.resolve([new vscode.TreeItem('Portal details not found')]);
-                }
-                const remoteSysOidMaps = await getRemoteSysOidMaps(this.context, this.outputChannel, portalDetails);
-                return remoteSysOidMaps.map(sysOidMap => {
-                    const item = new vscode.TreeItem(sysOidMap.oid, vscode.TreeItemCollapsibleState.None);
-                    item.id = `remote-sys-oid-map-${sysOidMap.id}`;
-                    // item.command = { command: 'logicmonitor.pullSysOidMap', title: 'Pull SysOidMap', arguments: [sysOidMap.id, sysOidMap.oid] };
-                    return item;
-                });
             } else if (element.id === 'remote-applies-to-functions') {
                 const activePortalName = this.context.workspaceState.get<string>('logicmonitor.activePortal');
                 if (!activePortalName) {
@@ -1271,7 +1246,8 @@ export function activate(context: vscode.ExtensionContext) {
         const url = `https://${portalDetails.COMPANY_NAME}.logicmonitor.com/santaba/rest${resourcePath}?collectorId=${activeCollectorId}`;
 
         if (debugEnabled) {
-            outputChannel.appendLine(`\n--- Making Debug API Call ---`);
+            outputChannel.appendLine(`
+--- Making Debug API Call ---`);
             outputChannel.appendLine(`URL: ${url}`);
             outputChannel.appendLine(`Payload: ${JSON.stringify(payload, null, 2)}`);
         }
@@ -1279,7 +1255,8 @@ export function activate(context: vscode.ExtensionContext) {
         try {
             const apiResponse = await makeApiRequest(context, outputChannel, portalDetails, 'POST', resourcePath, payload, queryParams);
             if (debugEnabled) {
-                outputChannel.appendLine(`\n--- Debug API Response ---`);
+                outputChannel.appendLine(`
+--- Debug API Response ---`);
                 outputChannel.appendLine(JSON.stringify(apiResponse, null, 2));
                 outputChannel.appendLine(`--- End Debug API Response ---`);
             }
@@ -1357,7 +1334,8 @@ export function activate(context: vscode.ExtensionContext) {
         const queryParams = { format: 'json' };
 
         if (debugEnabled) {
-            outputChannel.appendLine(`\n--- Pulling DataSource ---`);
+            outputChannel.appendLine(`
+--- Pulling DataSource ---`);
             outputChannel.appendLine(`DataSource ID: ${dataSourceId}`);
             outputChannel.appendLine(`DataSource Name: ${dataSourceName}`);
             outputChannel.appendLine(`URL: https://${portalDetails.COMPANY_NAME}.logicmonitor.com/santaba/rest${resourcePath}?format=json`);
@@ -1367,7 +1345,8 @@ export function activate(context: vscode.ExtensionContext) {
             const dataSourceDefinition = await makeApiRequest(context, outputChannel, portalDetails, 'GET', resourcePath, null, queryParams);
 
             if (debugEnabled) {                outputChannel.appendLine(`
---- DataSource Definition ---`);                outputChannel.appendLine(JSON.stringify(dataSourceDefinition, null, 2));                outputChannel.appendLine(`--- End DataSource Definition ---`);            }            console.log("DataSource Definition:", JSON.stringify(dataSourceDefinition, null, 2));
+--- DataSource Definition ---`);                outputChannel.appendLine(JSON.stringify(dataSourceDefinition, null, 2));                outputChannel.appendLine(`--- End DataSource Definition ---`);            }
+            console.log("DataSource Definition:", JSON.stringify(dataSourceDefinition, null, 2));
 
             // Save the module definition to a local file
             const workspaceFolders = vscode.workspace.workspaceFolders;
@@ -1406,9 +1385,6 @@ export function activate(context: vscode.ExtensionContext) {
                 if (dataSourceDefinition.autoDiscoveryConfig.method.groovyScript) {
                     scriptContent = dataSourceDefinition.autoDiscoveryConfig.method.groovyScript;
                     scriptExtension = ".groovy";
-                } else if (dataSourceDefinition.autoDiscoveryConfig.method.winScript) {
-                    scriptContent = dataSourceDefinition.autoDiscoveryConfig.method.winScript;
-                    scriptExtension = ".ps1";
                 }
 
                 if (scriptContent) {
@@ -1427,9 +1403,6 @@ export function activate(context: vscode.ExtensionContext) {
                 if (dataSourceDefinition.collectorAttribute.groovyScript) {
                     scriptContent = dataSourceDefinition.collectorAttribute.groovyScript;
                     scriptExtension = ".groovy";
-                } else if (dataSourceDefinition.collectorAttribute.windowsScript) {
-                    scriptContent = dataSourceDefinition.collectorAttribute.windowsScript;
-                    scriptExtension = ".ps1";
                 }
 
                 if (scriptContent) {
@@ -1454,7 +1427,488 @@ export function activate(context: vscode.ExtensionContext) {
         await vscode.commands.executeCommand('vscode.openFolder', uri, true);
     });
 
-    context.subscriptions.push(setCredentials, setActivePortal, setActiveDevice, runActiveScript, toggleDebug, pullDataSource, openLocalModule);
+    let pullEventSource = vscode.commands.registerCommand('logicmonitor.pullEventSource', async (treeItem: vscode.TreeItem) => {
+        const eventSourceIdMatch = treeItem.id?.match(/remote-eventsource-(\d+)/);
+        if (!eventSourceIdMatch || !eventSourceIdMatch[1]) {
+            vscode.window.showErrorMessage('Could not determine EventSource ID from the selected item.');
+            return;
+        }
+        const eventSourceId = eventSourceIdMatch[1];
+
+        const eventSourceName = treeItem.label as string;
+
+        const debugEnabled = context.workspaceState.get<boolean>('logicmonitor.debugEnabled', false);
+        const activePortalName = context.workspaceState.get<string>('logicmonitor.activePortal');
+
+        if (!activePortalName) {
+            vscode.window.showErrorMessage('Please select an active portal in the LogicMonitor sidebar.');
+            return;
+        }
+
+        const portalDetails = (await getCredentials(context))?.find(([name, _]) => name === activePortalName)?.[1];
+
+        if (!portalDetails) {
+            vscode.window.showErrorMessage(`Portal details for ${activePortalName} not found.`);
+            return;
+        }
+
+        const resourcePath = `/setting/eventsources/${eventSourceId}`;
+        const queryParams = { format: 'json' };
+
+        if (debugEnabled) {
+            outputChannel.appendLine(`
+--- Pulling EventSource ---`);
+            outputChannel.appendLine(`EventSource ID: ${eventSourceId}`);
+            outputChannel.appendLine(`EventSource Name: ${eventSourceName}`);
+            outputChannel.appendLine(`URL: https://${portalDetails.COMPANY_NAME}.logicmonitor.com/santaba/rest${resourcePath}?format=json`);
+        }
+
+        try {
+            const eventSourceDefinition = await makeApiRequest(context, outputChannel, portalDetails, 'GET', resourcePath, null, queryParams);
+
+            if (debugEnabled) {
+                outputChannel.appendLine(`
+--- EventSource Definition ---`);
+                outputChannel.appendLine(JSON.stringify(eventSourceDefinition, null, 2));
+                outputChannel.appendLine(`--- End EventSource Definition ---`);
+            }
+
+            const workspaceFolders = vscode.workspace.workspaceFolders;
+            if (!workspaceFolders || workspaceFolders.length === 0) {
+                vscode.window.showErrorMessage('No workspace folder open. Cannot save EventSource.');
+                return;
+            }
+            const workspaceRoot = workspaceFolders[0].uri.fsPath;
+            const moduleDir = path.join(workspaceRoot, eventSourceName);
+
+            if (!fs.existsSync(moduleDir)) {
+                fs.mkdirSync(moduleDir, { recursive: true });
+            }
+
+            const moduleFilePath = path.join(moduleDir, `${eventSourceName}.json`);
+            fs.writeFileSync(moduleFilePath, JSON.stringify(eventSourceDefinition, null, 2));
+
+            const manifestContent = {
+                name: eventSourceName,
+                displayName: eventSourceName,
+                id: eventSourceId,
+                portal: activePortalName,
+                moduleType: "EventSource",
+                pullDate: new Date().toISOString()
+            };
+            const manifestFilePath = path.join(moduleDir, `manifest.json`);
+            fs.writeFileSync(manifestFilePath, JSON.stringify(manifestContent, null, 2));
+            vscode.window.showInformationMessage(`Manifest saved to ${manifestFilePath}`);
+
+            if (eventSourceDefinition.groovyScript) {
+                const scriptFilePath = path.join(moduleDir, `script.groovy`);
+                fs.writeFileSync(scriptFilePath, eventSourceDefinition.groovyScript);
+                vscode.window.showInformationMessage(`Groovy script saved to ${scriptFilePath}`);
+            }
+
+            vscode.window.showInformationMessage(`EventSource '${eventSourceName}' pulled successfully to ${moduleFilePath}`);
+
+        } catch (error: any) {
+            outputChannel.appendLine(`
+--- Pull EventSource Error ---`);
+            outputChannel.appendLine(`Error: ${error.message}`);
+            outputChannel.appendLine(`--- End Pull EventSource Error ---`);
+            vscode.window.showErrorMessage(`Failed to pull EventSource '${eventSourceName}': ${error.message}`);
+        }
+        outputChannel.show();
+    });
+
+    let pullPropertySource = vscode.commands.registerCommand('logicmonitor.pullPropertySource', async (treeItem: vscode.TreeItem) => {
+        const propertySourceIdMatch = treeItem.id?.match(/remote-propertysource-(\d+)/);
+        if (!propertySourceIdMatch || !propertySourceIdMatch[1]) {
+            vscode.window.showErrorMessage('Could not determine PropertySource ID from the selected item.');
+            return;
+        }
+        const propertySourceId = propertySourceIdMatch[1];
+
+        const propertySourceName = treeItem.label as string;
+
+        const debugEnabled = context.workspaceState.get<boolean>('logicmonitor.debugEnabled', false);
+        const activePortalName = context.workspaceState.get<string>('logicmonitor.activePortal');
+
+        if (!activePortalName) {
+            vscode.window.showErrorMessage('Please select an active portal in the LogicMonitor sidebar.');
+            return;
+        }
+
+        const portalDetails = (await getCredentials(context))?.find(([name, _]) => name === activePortalName)?.[1];
+
+        if (!portalDetails) {
+            vscode.window.showErrorMessage(`Portal details for ${activePortalName} not found.`);
+            return;
+        }
+
+        const resourcePath = `/setting/propertyrules/${propertySourceId}`;
+        const queryParams = { format: 'json' };
+
+        if (debugEnabled) {
+            outputChannel.appendLine(`
+--- Pulling PropertySource ---`);
+            outputChannel.appendLine(`PropertySource ID: ${propertySourceId}`);
+            outputChannel.appendLine(`PropertySource Name: ${propertySourceName}`);
+            outputChannel.appendLine(`URL: https://${portalDetails.COMPANY_NAME}.logicmonitor.com/santaba/rest${resourcePath}?format=json`);
+        }
+
+        try {
+            const propertySourceDefinition = await makeApiRequest(context, outputChannel, portalDetails, 'GET', resourcePath, null, queryParams);
+
+            if (debugEnabled) {
+                outputChannel.appendLine(`
+--- PropertySource Definition ---`);
+                outputChannel.appendLine(JSON.stringify(propertySourceDefinition, null, 2));
+                outputChannel.appendLine(`--- End PropertySource Definition ---`);
+            }
+
+            const workspaceFolders = vscode.workspace.workspaceFolders;
+            if (!workspaceFolders || workspaceFolders.length === 0) {
+                vscode.window.showErrorMessage('No workspace folder open. Cannot save PropertySource.');
+                return;
+            }
+            const workspaceRoot = workspaceFolders[0].uri.fsPath;
+            const moduleDir = path.join(workspaceRoot, propertySourceName);
+
+            if (!fs.existsSync(moduleDir)) {
+                fs.mkdirSync(moduleDir, { recursive: true });
+            }
+
+            const moduleFilePath = path.join(moduleDir, `${propertySourceName}.json`);
+            fs.writeFileSync(moduleFilePath, JSON.stringify(propertySourceDefinition, null, 2));
+
+            const manifestContent = {
+                name: propertySourceName,
+                displayName: propertySourceName,
+                id: propertySourceId,
+                portal: activePortalName,
+                moduleType: "PropertySource",
+                pullDate: new Date().toISOString()
+            };
+            const manifestFilePath = path.join(moduleDir, `manifest.json`);
+            fs.writeFileSync(manifestFilePath, JSON.stringify(manifestContent, null, 2));
+            vscode.window.showInformationMessage(`Manifest saved to ${manifestFilePath}`);
+
+            if (propertySourceDefinition.groovyScript) {
+                const scriptFilePath = path.join(moduleDir, `script.groovy`);
+                fs.writeFileSync(scriptFilePath, propertySourceDefinition.groovyScript);
+                vscode.window.showInformationMessage(`Groovy script saved to ${scriptFilePath}`);
+            }
+
+            if (propertySourceDefinition.windowsScript) {
+                const scriptFilePath = path.join(moduleDir, `script.ps1`);
+                fs.writeFileSync(scriptFilePath, propertySourceDefinition.windowsScript);
+                vscode.window.showInformationMessage(`PowerShell script saved to ${scriptFilePath}`);
+            }
+
+            vscode.window.showInformationMessage(`PropertySource '${propertySourceName}' pulled successfully to ${moduleFilePath}`);
+
+        } catch (error: any) {
+            outputChannel.appendLine(`
+--- Pull PropertySource Error ---`);
+            outputChannel.appendLine(`Error: ${error.message}`);
+            outputChannel.appendLine(`--- End Pull PropertySource Error ---`);
+            vscode.window.showErrorMessage(`Failed to pull PropertySource '${propertySourceName}': ${error.message}`);
+        }
+        outputChannel.show();
+    });
+
+    let pullConfigSource = vscode.commands.registerCommand('logicmonitor.pullConfigSource', async (treeItem: vscode.TreeItem) => {
+        const configSourceIdMatch = treeItem.id?.match(/remote-configsource-(\d+)/);
+        if (!configSourceIdMatch || !configSourceIdMatch[1]) {
+            vscode.window.showErrorMessage('Could not determine ConfigSource ID from the selected item.');
+            return;
+        }
+        const configSourceId = configSourceIdMatch[1];
+
+        const configSourceName = treeItem.label as string;
+
+        const debugEnabled = context.workspaceState.get<boolean>('logicmonitor.debugEnabled', false);
+        const activePortalName = context.workspaceState.get<string>('logicmonitor.activePortal');
+
+        if (!activePortalName) {
+            vscode.window.showErrorMessage('Please select an active portal in the LogicMonitor sidebar.');
+            return;
+        }
+
+        const portalDetails = (await getCredentials(context))?.find(([name, _]) => name === activePortalName)?.[1];
+
+        if (!portalDetails) {
+            vscode.window.showErrorMessage(`Portal details for ${activePortalName} not found.`);
+            return;
+        }
+
+        const resourcePath = `/setting/configsources/${configSourceId}`;
+        const queryParams = { format: 'json' };
+
+        if (debugEnabled) {
+            outputChannel.appendLine(`
+--- Pulling ConfigSource ---`);
+            outputChannel.appendLine(`ConfigSource ID: ${configSourceId}`);
+            outputChannel.appendLine(`ConfigSource Name: ${configSourceName}`);
+            outputChannel.appendLine(`URL: https://${portalDetails.COMPANY_NAME}.logicmonitor.com/santaba/rest${resourcePath}?format=json`);
+        }
+
+        try {
+            const configSourceDefinition = await makeApiRequest(context, outputChannel, portalDetails, 'GET', resourcePath, null, queryParams);
+
+            if (debugEnabled) {
+                outputChannel.appendLine(`
+--- ConfigSource Definition ---`);
+                outputChannel.appendLine(JSON.stringify(configSourceDefinition, null, 2));
+                outputChannel.appendLine(`--- End ConfigSource Definition ---`);
+            }
+
+            const workspaceFolders = vscode.workspace.workspaceFolders;
+            if (!workspaceFolders || workspaceFolders.length === 0) {
+                vscode.window.showErrorMessage('No workspace folder open. Cannot save ConfigSource.');
+                return;
+            }
+            const workspaceRoot = workspaceFolders[0].uri.fsPath;
+            const moduleDir = path.join(workspaceRoot, configSourceName);
+
+            if (!fs.existsSync(moduleDir)) {
+                fs.mkdirSync(moduleDir, { recursive: true });
+            }
+
+            const moduleFilePath = path.join(moduleDir, `${configSourceName}.json`);
+            fs.writeFileSync(moduleFilePath, JSON.stringify(configSourceDefinition, null, 2));
+
+            const manifestContent = {
+                name: configSourceName,
+                displayName: configSourceName,
+                id: configSourceId,
+                portal: activePortalName,
+                moduleType: "ConfigSource",
+                pullDate: new Date().toISOString()
+            };
+            const manifestFilePath = path.join(moduleDir, `manifest.json`);
+            fs.writeFileSync(manifestFilePath, JSON.stringify(manifestContent, null, 2));
+            vscode.window.showInformationMessage(`Manifest saved to ${manifestFilePath}`);
+
+            if (configSourceDefinition.collectorAttribute && configSourceDefinition.collectorAttribute.groovyScript) {
+                const scriptExtension = configSourceDefinition.collectorAttribute.scriptType === 'powerShell' ? '.ps1' : '.groovy';
+                const scriptFilePath = path.join(moduleDir, `collection${scriptExtension}`);
+                fs.writeFileSync(scriptFilePath, configSourceDefinition.collectorAttribute.groovyScript);
+                vscode.window.showInformationMessage(`Collection script saved to ${scriptFilePath}`);
+            }
+
+            if (configSourceDefinition.autoDiscoveryConfig && configSourceDefinition.autoDiscoveryConfig.method && configSourceDefinition.autoDiscoveryConfig.method.groovyScript) {
+                const scriptExtension = configSourceDefinition.autoDiscoveryConfig.method.type === 'powerShell' ? '.ps1' : '.groovy';
+                const scriptFilePath = path.join(moduleDir, `discovery${scriptExtension}`);
+                fs.writeFileSync(scriptFilePath, configSourceDefinition.autoDiscoveryConfig.method.groovyScript);
+                vscode.window.showInformationMessage(`Discovery script saved to ${scriptFilePath}`);
+            }
+
+            vscode.window.showInformationMessage(`ConfigSource '${configSourceName}' pulled successfully to ${moduleFilePath}`);
+
+        } catch (error: any) {
+            outputChannel.appendLine(`
+--- Pull ConfigSource Error ---`);
+            outputChannel.appendLine(`Error: ${error.message}`);
+            outputChannel.appendLine(`--- End Pull ConfigSource Error ---`);
+            vscode.window.showErrorMessage(`Failed to pull ConfigSource '${configSourceName}': ${error.message}`);
+        }
+        outputChannel.show();
+    });
+
+    let pullTopologySource = vscode.commands.registerCommand('logicmonitor.pullTopologySource', async (treeItem: vscode.TreeItem) => {
+        const topologySourceIdMatch = treeItem.id?.match(/remote-topologysource-(\d+)/);
+        if (!topologySourceIdMatch || !topologySourceIdMatch[1]) {
+            vscode.window.showErrorMessage('Could not determine TopologySource ID from the selected item.');
+            return;
+        }
+        const topologySourceId = topologySourceIdMatch[1];
+
+        const topologySourceName = treeItem.label as string;
+
+        const debugEnabled = context.workspaceState.get<boolean>('logicmonitor.debugEnabled', false);
+        const activePortalName = context.workspaceState.get<string>('logicmonitor.activePortal');
+
+        if (!activePortalName) {
+            vscode.window.showErrorMessage('Please select an active portal in the LogicMonitor sidebar.');
+            return;
+        }
+
+        const portalDetails = (await getCredentials(context))?.find(([name, _]) => name === activePortalName)?.[1];
+
+        if (!portalDetails) {
+            vscode.window.showErrorMessage(`Portal details for ${activePortalName} not found.`);
+            return;
+        }
+
+        const resourcePath = `/setting/topologysources/${topologySourceId}`;
+        const queryParams = { format: 'json' };
+
+        if (debugEnabled) {
+            outputChannel.appendLine(`
+--- Pulling TopologySource ---`);
+            outputChannel.appendLine(`TopologySource ID: ${topologySourceId}`);
+            outputChannel.appendLine(`TopologySource Name: ${topologySourceName}`);
+            outputChannel.appendLine(`URL: https://${portalDetails.COMPANY_NAME}.logicmonitor.com/santaba/rest${resourcePath}?format=json`);
+        }
+
+        try {
+            const topologySourceDefinition = await makeApiRequest(context, outputChannel, portalDetails, 'GET', resourcePath, null, queryParams);
+
+            if (debugEnabled) {
+                outputChannel.appendLine(`
+--- TopologySource Definition ---`);
+                outputChannel.appendLine(JSON.stringify(topologySourceDefinition, null, 2));
+                outputChannel.appendLine(`--- End TopologySource Definition ---`);
+            }
+
+            const workspaceFolders = vscode.workspace.workspaceFolders;
+            if (!workspaceFolders || workspaceFolders.length === 0) {
+                vscode.window.showErrorMessage('No workspace folder open. Cannot save TopologySource.');
+                return;
+            }
+            const workspaceRoot = workspaceFolders[0].uri.fsPath;
+            const moduleDir = path.join(workspaceRoot, topologySourceName);
+
+            if (!fs.existsSync(moduleDir)) {
+                fs.mkdirSync(moduleDir, { recursive: true });
+            }
+
+            const moduleFilePath = path.join(moduleDir, `${topologySourceName}.json`);
+            fs.writeFileSync(moduleFilePath, JSON.stringify(topologySourceDefinition, null, 2));
+
+            const manifestContent = {
+                name: topologySourceName,
+                displayName: topologySourceName,
+                id: topologySourceId,
+                portal: activePortalName,
+                moduleType: "TopologySource",
+                pullDate: new Date().toISOString()
+            };
+            const manifestFilePath = path.join(moduleDir, `manifest.json`);
+            fs.writeFileSync(manifestFilePath, JSON.stringify(manifestContent, null, 2));
+            vscode.window.showInformationMessage(`Manifest saved to ${manifestFilePath}`);
+
+            if (topologySourceDefinition.collectorAttribute && topologySourceDefinition.collectorAttribute.groovyScript) {
+                const scriptExtension = topologySourceDefinition.collectorAttribute.scriptType === 'powerShell' ? '.ps1' : '.groovy';
+                const scriptFilePath = path.join(moduleDir, `script${scriptExtension}`);
+                fs.writeFileSync(scriptFilePath, topologySourceDefinition.collectorAttribute.groovyScript);
+                vscode.window.showInformationMessage(`Script saved to ${scriptFilePath}`);
+            }
+
+            vscode.window.showInformationMessage(`TopologySource '${topologySourceName}' pulled successfully to ${moduleFilePath}`);
+
+        } catch (error: any) {
+            outputChannel.appendLine(`
+--- Pull TopologySource Error ---`);
+            outputChannel.appendLine(`Error: ${error.message}`);
+            outputChannel.appendLine(`--- End Pull TopologySource Error ---`);
+            vscode.window.showErrorMessage(`Failed to pull TopologySource '${topologySourceName}': ${error.message}`);
+        }
+        outputChannel.show();
+    });
+
+    let pullLogSource = vscode.commands.registerCommand('logicmonitor.pullLogSource', async (treeItem: vscode.TreeItem) => {
+        const logSourceIdMatch = treeItem.id?.match(/remote-logsource-(\d+)/);
+        if (!logSourceIdMatch || !logSourceIdMatch[1]) {
+            vscode.window.showErrorMessage('Could not determine LogSource ID from the selected item.');
+            return;
+        }
+        const logSourceId = logSourceIdMatch[1];
+
+        const logSourceName = treeItem.label as string;
+
+        const debugEnabled = context.workspaceState.get<boolean>('logicmonitor.debugEnabled', false);
+        const activePortalName = context.workspaceState.get<string>('logicmonitor.activePortal');
+
+        if (!activePortalName) {
+            vscode.window.showErrorMessage('Please select an active portal in the LogicMonitor sidebar.');
+            return;
+        }
+
+        const portalDetails = (await getCredentials(context))?.find(([name, _]) => name === activePortalName)?.[1];
+
+        if (!portalDetails) {
+            vscode.window.showErrorMessage(`Portal details for ${activePortalName} not found.`);
+            return;
+        }
+
+        const resourcePath = `/setting/logsources/${logSourceId}`;
+        const queryParams = { format: 'json' };
+
+        if (debugEnabled) {
+            outputChannel.appendLine(`
+--- Pulling LogSource ---`);
+            outputChannel.appendLine(`LogSource ID: ${logSourceId}`);
+            outputChannel.appendLine(`LogSource Name: ${logSourceName}`);
+            outputChannel.appendLine(`URL: https://${portalDetails.COMPANY_NAME}.logicmonitor.com/santaba/rest${resourcePath}?format=json`);
+        }
+
+        try {
+            const logSourceDefinition = await makeApiRequest(context, outputChannel, portalDetails, 'GET', resourcePath, null, queryParams);
+
+            if (debugEnabled) {
+                outputChannel.appendLine(`
+--- LogSource Definition ---`);
+                outputChannel.appendLine(JSON.stringify(logSourceDefinition, null, 2));
+                outputChannel.appendLine(`--- End LogSource Definition ---`);
+            }
+
+            const workspaceFolders = vscode.workspace.workspaceFolders;
+            if (!workspaceFolders || workspaceFolders.length === 0) {
+                vscode.window.showErrorMessage('No workspace folder open. Cannot save LogSource.');
+                return;
+            }
+            const workspaceRoot = workspaceFolders[0].uri.fsPath;
+            const moduleDir = path.join(workspaceRoot, logSourceName);
+
+            if (!fs.existsSync(moduleDir)) {
+                fs.mkdirSync(moduleDir, { recursive: true });
+            }
+
+            const moduleFilePath = path.join(moduleDir, `${logSourceName}.json`);
+            fs.writeFileSync(moduleFilePath, JSON.stringify(logSourceDefinition, null, 2));
+
+            const manifestContent = {
+                name: logSourceName,
+                displayName: logSourceName,
+                id: logSourceId,
+                portal: activePortalName,
+                moduleType: "LogSource",
+                pullDate: new Date().toISOString()
+            };
+            const manifestFilePath = path.join(moduleDir, `manifest.json`);
+            fs.writeFileSync(manifestFilePath, JSON.stringify(manifestContent, null, 2));
+            vscode.window.showInformationMessage(`Manifest saved to ${manifestFilePath}`);
+
+            if (logSourceDefinition.collectionAttribute && logSourceDefinition.collectionAttribute.script && logSourceDefinition.collectionAttribute.script.embeddedContent) {
+                const scriptFilePath = path.join(moduleDir, `script.groovy`);
+                fs.writeFileSync(scriptFilePath, logSourceDefinition.collectionAttribute.script.embeddedContent);
+                vscode.window.showInformationMessage(`Script saved to ${scriptFilePath}`);
+            }
+
+            vscode.window.showInformationMessage(`LogSource '${logSourceName}' pulled successfully to ${moduleFilePath}`);
+
+        } catch (error: any) {
+            outputChannel.appendLine(`
+--- Pull LogSource Error ---`);
+            outputChannel.appendLine(`Error: ${error.message}`);
+            outputChannel.appendLine(`--- End Pull LogSource Error ---`);
+            vscode.window.showErrorMessage(`Failed to pull LogSource '${logSourceName}': ${error.message}`);
+        }
+        outputChannel.show();
+    });
+
+    context.subscriptions.push(setCredentials);
+    context.subscriptions.push(setActivePortal);
+    context.subscriptions.push(setActiveDevice);
+    context.subscriptions.push(runActiveScript);
+    context.subscriptions.push(toggleDebug);
+    context.subscriptions.push(pullDataSource);
+    context.subscriptions.push(openLocalModule);
+    context.subscriptions.push(pullEventSource);
+    context.subscriptions.push(pullPropertySource);
+    context.subscriptions.push(pullConfigSource);
+    context.subscriptions.push(pullTopologySource);
+    context.subscriptions.push(pullLogSource);
 }
 
 export function deactivate() {}

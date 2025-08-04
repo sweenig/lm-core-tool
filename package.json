@@ -18,6 +18,11 @@
     "onCommand:logicmonitor.setCredentials",
     "onCommand:logicmonitor.setActivePortal",
     "onCommand:logicmonitor.setActiveDevice",
+    "onCommand:logicmonitor.pullDataSource",
+    "onCommand:logicmonitor.pullEventSource",
+    "onCommand:logicmonitor.pullPropertySource",
+    "onCommand:logicmonitor.pullConfigSource",
+    "onCommand:logicmonitor.pullTopologySource",
     "onView:logicmonitor-settings",
     "onView:logicmonitor-current-selections",
     "onView:logicmonitor-navigation",
@@ -29,6 +34,11 @@
       {
         "command": "logicmonitor.pull",
         "title": "LogicMonitor: Pull LogicModule(s)"
+      },
+      {
+        "command": "logicmonitor.pullDataSource",
+        "title": "Pull DataSource",
+        "icon": "$(cloud-download)"
       },
       {
         "command": "logicmonitor.push",
@@ -43,8 +53,28 @@
         }
       },
       {
-        "command": "logicmonitor.pullDataSource",
-        "title": "Pull DataSource",
+        "command": "logicmonitor.pullEventSource",
+        "title": "Pull EventSource",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "logicmonitor.pullPropertySource",
+        "title": "Pull PropertySource",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "logicmonitor.pullConfigSource",
+        "title": "Pull ConfigSource",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "logicmonitor.pullTopologySource",
+        "title": "Pull TopologySource",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "logicmonitor.pullLogSource",
+        "title": "Pull LogSource",
         "icon": "$(cloud-download)"
       }
     ],
@@ -61,6 +91,31 @@
         {
           "when": "view == logicmonitor-modules && viewItem == remote-datasource",
           "command": "logicmonitor.pullDataSource",
+          "group": "inline"
+        },
+        {
+          "when": "view == logicmonitor-modules && viewItem == remote-eventsource",
+          "command": "logicmonitor.pullEventSource",
+          "group": "inline"
+        },
+        {
+          "when": "view == logicmonitor-modules && viewItem == remote-propertysource",
+          "command": "logicmonitor.pullPropertySource",
+          "group": "inline"
+        },
+        {
+          "when": "view == logicmonitor-modules && viewItem == remote-configsource",
+          "command": "logicmonitor.pullConfigSource",
+          "group": "inline"
+        },
+        {
+          "when": "view == logicmonitor-modules && viewItem == remote-topologysource",
+          "command": "logicmonitor.pullTopologySource",
+          "group": "inline"
+        },
+        {
+          "when": "view == logicmonitor-modules && viewItem == remote-logsource",
+          "command": "logicmonitor.pullLogSource",
           "group": "inline"
         }
       ]
@@ -113,7 +168,6 @@
     "@typescript-eslint/eslint-plugin": "^8.31.1",
     "@typescript-eslint/parser": "^8.31.1",
     "@vscode/test-cli": "^0.0.11",
-    "@vscode/test-electron": "^2.5.2",
     "eslint": "^9.25.1",
     "ts-loader": "^9.5.2",
     "typescript": "^5.8.3",
