@@ -49,13 +49,15 @@ In the collector debug console, you could select the device against which the ta
 
 There is a new play button for any script being edited (even unsaved) that has the Powershell or Groovy language specified. Clicking the play button will execute the script and show the script output in the Output channel.
 
-## Known Issues
+## Pulling a Module from LM
 
-* Modules view does not populate properly.
+You can list and pull DataSources from LM by looking in the Modules section of the extension sidebar. You can expand the remote branch, navigate to the DataSource you want and have it download the definition file and the discovery and collection scripts (if they exist). A manifest is also downloaded, which will be used eventually to populate the local branch of the tree and eventually allow pushing changes made to the DataSource back to LM.
+
+## Known Issues
 
 ## Release Notes
 
-### 0.1.0
+### 0.1.0 - Published
 
 Initial release of the LM Core Tool extension.
 
@@ -63,3 +65,11 @@ Initial release of the LM Core Tool extension.
 * Implemented current selections view.
 * Implemented resource tree to make selections.
 * Implemented script running (needs further testing)
+
+### 0.1.1 - Published
+
+* Fixed the remote branch of the Modules view. DataSources can now be pulled, with collection/discovery scripts, if configured.
+
+### 0.1.2 - In Progress
+
+* Fixing the pull function so that more types of modules (ES, PS, etc.) can be pulled.
