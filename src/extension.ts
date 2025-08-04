@@ -823,90 +823,9 @@ class ModulesProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
                                     moduleTypes[manifest.moduleType] = [];
                                 }
                                 const item = new vscode.TreeItem(manifest.displayName || manifest.name, vscode.TreeItemCollapsibleState.None);
-                                item.id = `local-module-${manifest.moduleType}-${manifest.id}`;
+                                item.id = `local-module-${manifest.moduleType}-${manifest.id || 'unknown'}`;
                                 item.description = `Portal: ${manifest.portal} (Pulled: ${new Date(manifest.pullDate).toLocaleDateString()})`;
-                                item.tooltip = `ID: ${manifest.id}\nPortal: ${manifest.portal}\nPulled: ${new Date(manifest.pullDate).toLocaleString()}`;
-                                item.command = { command: 'logicmonitor.openLocalModule', title: 'Open Local Module', arguments: [modulePath] };
-                                moduleTypes[manifest.moduleType].push(item);
-                            } catch (error) {
-                                console.error(`Error reading or parsing manifest.json for ${dirent.name}:`, error);
-                                const item = new vscode.TreeItem(`${dirent.name} (Error loading manifest)`, vscode.TreeItemCollapsibleState.None);
-                                item.id = `local-module-error-${dirent.name}`;
-                                moduleTypes["Unknown"] = moduleTypes["Unknown"] || [];
-                                moduleTypes["Unknown"].push(item);
-                            }
-                        } else {
-                            const item = new vscode.TreeItem(`${dirent.name} (No manifest.json)`, vscode.TreeItemCollapsibleState.None);
-                            item.id = `local-module-no-manifest-${dirent.name}`;
-                            moduleTypes["Unknown"] = moduleTypes["Unknown"] || [];
-                            moduleTypes["Unknown"].push(item);
-                        }
-                    }
-                }
-
-                const treeItems: vscode.TreeItem[] = [];
-                for (const type in moduleTypes) {
-                    const typeItem = new vscode.TreeItem(type, vscode.TreeItemCollapsibleState.Collapsed);
-                    typeItem.id = `local-module-type-${type}`;
-                    treeItems.push(typeItem);
-                }
-                return Promise.resolve(treeItems.sort((a, b) => a.label!.localeCompare(b.label!)));
-            } else if (element.id?.startsWith('local-module-type-')) {
-                const moduleType = element.id.replace('local-module-type-', '');
-                const workspaceFolders = vscode.workspace.workspaceFolders;
-                if (!workspaceFolders || workspaceFolders.length === 0) {
-                    return Promise.resolve([]);
-                }
-                const workspaceRoot = workspaceFolders[0].uri.fsPath;
-                const lmCoreToolPath = path.join(workspaceRoot, 'coretool', 'lm');
-
-                const modulesInType: vscode.TreeItem[] = [];
-                const dirents = fs.readdirSync(lmCoreToolPath, { withFileTypes: true });
-                for (const dirent of dirents) {
-                    if (dirent.isDirectory()) {
-                        const modulePath = path.join(lmCoreToolPath, dirent.name);
-                        const manifestPath = path.join(modulePath, 'manifest.json');
-                        if (fs.existsSync(manifestPath)) {
-                            try {
-                                const manifestContent = fs.readFileSync(manifestPath, 'utf-8');
-                                const manifest: Manifest = JSON.parse(manifestContent);
-                                if (manifest.moduleType === moduleType) {
-                                    const item = new vscode.TreeItem(manifest.displayName || manifest.name, vscode.TreeItemCollapsibleState.None);
-                                    item.id = `local-module-${manifest.moduleType}-${manifest.id}`;
-                                    item.description = `Portal: ${manifest.portal} (Pulled: ${new Date(manifest.pullDate).toLocaleDateString()})`;
-                                    item.tooltip = `ID: ${manifest.id}\nPortal: ${manifest.portal}\nPulled: ${new Date(manifest.pullDate).toLocaleString()}`;
-                                    item.command = { command: 'logicmonitor.openLocalModule', title: 'Open Local Module', arguments: [modulePath] };
-                                    modulesInType.push(item);
-                                }
-                            } catch (error) {
-                                console.error(`Error reading or parsing manifest.json for ${dirent.name}:`, error);
-                            }
-                        }
-                    }
-                }
-                return Promise.resolve(modulesInType.sort((a, b) => a.label!.localeCompare(b.label!)));
-            }
-                const moduleTypes: { [key: string]: vscode.TreeItem[] } = {};
-
-                const dirents = fs.readdirSync(lmCoreToolPath, { withFileTypes: true });
-                for (const dirent of dirents) {
-                    if (dirent.isDirectory()) {
-                        const modulePath = path.join(lmCoreToolPath, dirent.name);
-                        const manifestPath = path.join(modulePath, 'manifest.json');
-                        if (fs.existsSync(manifestPath)) {
-                            try {
-                                const manifestContent = fs.readFileSync(manifestPath, 'utf-8');
-                                const manifest: Manifest = JSON.parse(manifestContent);
-
-                                if (!moduleTypes[manifest.moduleType]) {
-                                    moduleTypes[manifest.moduleType] = [];
-                                }
-                                const item = new vscode.TreeItem(manifest.displayName || manifest.name, vscode.TreeItemCollapsibleState.None);
-                                item.id = `local-module-${manifest.moduleType}-${manifest.id}`;
-                                item.description = `Portal: ${manifest.portal} (Pulled: ${new Date(manifest.pullDate).toLocaleDateString()})`;
-                                item.tooltip = `ID: ${manifest.id}
-Portal: ${manifest.portal}
-Pulled: ${new Date(manifest.pullDate).toLocaleString()}`;
+                                item.tooltip = `ID: ${manifest.id || 'unknown'}\nPortal: ${manifest.portal}\nPulled: ${new Date(manifest.pullDate).toLocaleString()}`;
                                 item.command = { command: 'logicmonitor.openLocalModule', title: 'Open Local Module', arguments: [modulePath] };
                                 moduleTypes[manifest.moduleType].push(item);
                             } catch (error) {
@@ -953,11 +872,9 @@ Pulled: ${new Date(manifest.pullDate).toLocaleString()}`;
                                 const manifest: Manifest = JSON.parse(manifestContent);
                                 if (manifest.moduleType === moduleType) {
                                     const item = new vscode.TreeItem(manifest.displayName || manifest.name, vscode.TreeItemCollapsibleState.None);
-                                    item.id = `local-module-${manifest.moduleType}-${manifest.id}`;
+                                    item.id = `local-module-${manifest.moduleType}-${manifest.id || 'unknown'}`;
                                     item.description = `Portal: ${manifest.portal} (Pulled: ${new Date(manifest.pullDate).toLocaleDateString()})`;
-                                    item.tooltip = `ID: ${manifest.id}
-Portal: ${manifest.portal}
-Pulled: ${new Date(manifest.pullDate).toLocaleString()}`;
+                                    item.tooltip = `ID: ${manifest.id || 'unknown'}\nPortal: ${manifest.portal}\nPulled: ${new Date(manifest.pullDate).toLocaleString()}`;
                                     item.command = { command: 'logicmonitor.openLocalModule', title: 'Open Local Module', arguments: [modulePath] };
                                     modulesInType.push(item);
                                 }
@@ -968,7 +885,7 @@ Pulled: ${new Date(manifest.pullDate).toLocaleString()}`;
                     }
                 }
                 return Promise.resolve(modulesInType.sort((a, b) => (a.label as string).localeCompare(b.label as string)));
-            } else if (element.id === 'remote-modules-root') {
+
                 const dataSourcesRoot = new vscode.TreeItem('DataSources', vscode.TreeItemCollapsibleState.Collapsed);
                 dataSourcesRoot.id = 'remote-data-sources';
                 const propertySourcesRoot = new vscode.TreeItem('PropertySources', vscode.TreeItemCollapsibleState.Collapsed);
