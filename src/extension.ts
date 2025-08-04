@@ -559,7 +559,7 @@ class NavigationProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
     private _onDidChangeTreeData: vscode.EventEmitter<vscode.TreeItem | undefined | null | void> = new vscode.EventEmitter<vscode.TreeItem | undefined | null | void>();
     readonly onDidChangeTreeData: vscode.Event<vscode.TreeItem | undefined | null | void> = this._onDidChangeTreeData.event;
 
-    constructor(private context: vscode.ExtensionContext, private outputChannel: vscode.OutputChannel) { } // Added outputChannel
+    constructor(private context: vscode.ExtensionContext, private outputChannel: vscode.OutputChannel) { } 
 
     refresh(): void {
         this._onDidChangeTreeData.fire();
@@ -1097,7 +1097,8 @@ class ModulesProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
                     .map(appliesToFunction => {
                         const item = new vscode.TreeItem(appliesToFunction.name, vscode.TreeItemCollapsibleState.None);
                         item.id = `remote-applies-to-function-${appliesToFunction.id}`;
-                        // item.command = { command: 'logicmonitor.pullAppliesToFunction', title: 'Pull AppliesToFunction', arguments: [appliesToFunction.id, appliesToFunction.name] };
+                        item.contextValue = 'remote-applies-to-function';
+                        item.command = { command: 'logicmonitor.pullAppliesToFunction', title: 'Pull AppliesToFunction', arguments: [appliesToFunction] };
                         return item;
                     });
             }
@@ -1897,6 +1898,91 @@ export function activate(context: vscode.ExtensionContext) {
         outputChannel.show();
     });
 
+    let pullAppliesToFunction = vscode.commands.registerCommand('logicmonitor.pullAppliesToFunction', async (treeItem: vscode.TreeItem) => {
+        const appliesToFunctionIdMatch = treeItem.id?.match(/remote-applies-to-function-(\d+)/);
+        if (!appliesToFunctionIdMatch || !appliesToFunctionIdMatch[1]) {
+            vscode.window.showErrorMessage('Could not determine AppliesTo Function ID from the selected item.');
+            return;
+        }
+        const appliesToFunctionId = appliesToFunctionIdMatch[1];
+
+        const appliesToFunctionName = treeItem.label as string;
+
+        const debugEnabled = context.workspaceState.get<boolean>('logicmonitor.debugEnabled', false);
+        const activePortalName = context.workspaceState.get<string>('logicmonitor.activePortal');
+
+        if (!activePortalName) {
+            vscode.window.showErrorMessage('Please select an active portal in the LogicMonitor sidebar.');
+            return;
+        }
+
+        const portalDetails = (await getCredentials(context))?.find(([name, _]) => name === activePortalName)?.[1];
+
+        if (!portalDetails) {
+            vscode.window.showErrorMessage(`Portal details for ${activePortalName} not found.`);
+            return;
+        }
+
+        const resourcePath = `/setting/functions/${appliesToFunctionId}`;
+        const queryParams = { format: 'json' };
+
+        if (debugEnabled) {
+            outputChannel.appendLine(`
+--- Pulling AppliesTo Function ---`);
+            outputChannel.appendLine(`AppliesTo Function ID: ${appliesToFunctionId}`);
+            outputChannel.appendLine(`AppliesTo Function Name: ${appliesToFunctionName}`);
+            outputChannel.appendLine(`URL: https://${portalDetails.COMPANY_NAME}.logicmonitor.com/santaba/rest${resourcePath}?format=json`);
+        }
+
+        try {
+            const appliesToFunctionDefinition = await makeApiRequest(context, outputChannel, portalDetails, 'GET', resourcePath, null, queryParams);
+
+            if (debugEnabled) {
+                outputChannel.appendLine(`
+--- AppliesTo Function Definition ---`);
+                outputChannel.appendLine(JSON.stringify(appliesToFunctionDefinition, null, 2));
+                outputChannel.appendLine(`--- End AppliesTo Function Definition ---`);
+            }
+
+            const workspaceFolders = vscode.workspace.workspaceFolders;
+            if (!workspaceFolders || workspaceFolders.length === 0) {
+                vscode.window.showErrorMessage('No workspace folder open. Cannot save AppliesTo Function.');
+                return;
+            }
+            const workspaceRoot = workspaceFolders[0].uri.fsPath;
+            const moduleDir = path.join(workspaceRoot, appliesToFunctionName);
+
+            if (!fs.existsSync(moduleDir)) {
+                fs.mkdirSync(moduleDir, { recursive: true });
+            }
+
+            const moduleFilePath = path.join(moduleDir, `${appliesToFunctionName}.json`);
+            fs.writeFileSync(moduleFilePath, JSON.stringify(appliesToFunctionDefinition, null, 2));
+
+            const manifestContent = {
+                name: appliesToFunctionName,
+                displayName: appliesToFunctionName,
+                id: appliesToFunctionId,
+                portal: activePortalName,
+                moduleType: "AppliesToFunction",
+                pullDate: new Date().toISOString()
+            };
+            const manifestFilePath = path.join(moduleDir, `manifest.json`);
+            fs.writeFileSync(manifestFilePath, JSON.stringify(manifestContent, null, 2));
+            vscode.window.showInformationMessage(`Manifest saved to ${manifestFilePath}`);
+
+            vscode.window.showInformationMessage(`AppliesTo Function '${appliesToFunctionName}' pulled successfully to ${moduleFilePath}`);
+
+        } catch (error: any) {
+            outputChannel.appendLine(`
+--- Pull AppliesTo Function Error ---`);
+            outputChannel.appendLine(`Error: ${error.message}`);
+            outputChannel.appendLine(`--- End Pull AppliesTo Function Error ---`);
+            vscode.window.showErrorMessage(`Failed to pull AppliesTo Function '${appliesToFunctionName}': ${error.message}`);
+        }
+        outputChannel.show();
+    });
+
     context.subscriptions.push(setCredentials);
     context.subscriptions.push(setActivePortal);
     context.subscriptions.push(setActiveDevice);
@@ -1909,6 +1995,7 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(pullConfigSource);
     context.subscriptions.push(pullTopologySource);
     context.subscriptions.push(pullLogSource);
+    context.subscriptions.push(pullAppliesToFunction);
 }
 
 export function deactivate() {}

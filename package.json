@@ -76,6 +76,11 @@
         "command": "logicmonitor.pullLogSource",
         "title": "Pull LogSource",
         "icon": "$(cloud-download)"
+      },
+      {
+        "command": "logicmonitor.pullAppliesToFunction",
+        "title": "Pull AppliesTo Function",
+        "icon": "$(cloud-download)"
       }
     ],
     "menus": {
@@ -116,6 +121,11 @@
         {
           "when": "view == logicmonitor-modules && viewItem == remote-logsource",
           "command": "logicmonitor.pullLogSource",
+          "group": "inline"
+        },
+        {
+          "when": "view == logicmonitor-modules && viewItem == remote-applies-to-function",
+          "command": "logicmonitor.pullAppliesToFunction",
           "group": "inline"
         }
       ]
