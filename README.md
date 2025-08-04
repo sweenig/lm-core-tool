@@ -51,7 +51,7 @@ There is a new play button for any script being edited (even unsaved) that has t
 
 ## Known Issues
 
-There are no known issues at this time.
+* Modules view does not populate properly.
 
 ## Release Notes
 
