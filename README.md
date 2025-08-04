@@ -70,6 +70,16 @@ Initial release of the LM Core Tool extension.
 
 * Fixed the remote branch of the Modules view. DataSources can now be pulled, with collection/discovery scripts, if configured.
 
-### 0.1.2 - In Progress
+### 0.1.2 - Published
 
-* Fixing the pull function so that more types of modules (ES, PS, etc.) can be pulled.
+* Fixed the pull function so that more types of modules (ES, PS, etc.) can be pulled.
+* Added the population of the "Local" branch of the modules tree.
+
+### 0.1.3 - In Progress
+
+* Add a button to each module in the local branch to push the local changes back to LM.
+
+### Future Enhancements
+
+* Add refresh buttons where needed in the modules tree
+* Add logic to compare pulled module content to local, previously pulled module content and ask to overwrite
