@@ -874,7 +874,9 @@ class ModulesProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
                                     const item = new vscode.TreeItem(manifest.displayName || manifest.name, vscode.TreeItemCollapsibleState.None);
                                     item.id = `local-module-${manifest.moduleType}-${manifest.id || 'unknown'}`;
                                     item.description = `Portal: ${manifest.portal} (Pulled: ${new Date(manifest.pullDate).toLocaleDateString()})`;
-                                    item.tooltip = `ID: ${manifest.id || 'unknown'}\nPortal: ${manifest.portal}\nPulled: ${new Date(manifest.pullDate).toLocaleString()}`;
+                                    item.tooltip = `ID: ${manifest.id || 'unknown'}
+Portal: ${manifest.portal}
+Pulled: ${new Date(manifest.pullDate).toLocaleString()}`;
                                     item.command = { command: 'logicmonitor.openLocalModule', title: 'Open Local Module', arguments: [modulePath] };
                                     modulesInType.push(item);
                                 }
@@ -885,7 +887,7 @@ class ModulesProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
                     }
                 }
                 return Promise.resolve(modulesInType.sort((a, b) => (a.label as string).localeCompare(b.label as string)));
-
+            } else if (element.id === 'remote-modules-root') {
                 const dataSourcesRoot = new vscode.TreeItem('DataSources', vscode.TreeItemCollapsibleState.Collapsed);
                 dataSourcesRoot.id = 'remote-data-sources';
                 const propertySourcesRoot = new vscode.TreeItem('PropertySources', vscode.TreeItemCollapsibleState.Collapsed);
